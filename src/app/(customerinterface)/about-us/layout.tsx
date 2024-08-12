@@ -1,20 +1,17 @@
 import Head from 'next/head';
+import React, { ReactNode } from 'react';
 
-const Layout = ({ children }) => (
+interface LayoutProps {
+  children: ReactNode; // Define `children` as ReactNode
+}
+
+const Layout: React.FC<LayoutProps> = ({ children }) => (
   <div>
     <Head>
       <meta charSet="utf-8" />
-      <meta name="viewport" content="width=device-width, initial-scale=1" />
-      <title>Gote Probiotics</title>
-      {/* Add any additional meta tags, CSS/JS imports here */}
+      <title>About Us </title>
     </Head>
-    <header>
-      {/* Your header content */}
-    </header>
-    <main>{children}</main>
-    <footer>
-      {/* Your footer content */}
-    </footer>
+    <main>{children}</main> {/* Render the children */}
   </div>
 );
 
