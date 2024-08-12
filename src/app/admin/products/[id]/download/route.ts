@@ -9,7 +9,7 @@ export async function GET(req: NextRequest,{params: {id}}: {params: {id:string}}
         select:{filePath: true, name:true},
     })
 
-    if (product == null) return notFound
+    if (product == null) return notFound()
 
     const { size } = await fs.stat(product.filePath)
     const file = await fs.readFile(product.filePath)

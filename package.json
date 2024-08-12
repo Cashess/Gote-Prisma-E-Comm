@@ -10,8 +10,10 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "email": "email dev"
-  },
+    
+  "email": "copy .env emails && email dev --dir emails"
+},
+
   "dependencies": {
     "@prisma/client": "^5.16.2",
     "@radix-ui/react-dropdown-menu": "^2.1.1",
