@@ -13,16 +13,17 @@ import React from "react"
 
 type OrderHistoryEmailProps = {
   orders: {
-    id: string
-    pricePaidInCents: number
-    createdAt: Date
-    downloadVerificationId: string
+    id: string;
+    pricePaidInCents: number;
+    createdAt: Date;
+    downloadVerificationId: string;
     product: {
-      name: string
-      imagePath: string
-      description: string
-    }
+      name: string;
+      imagePath: string;
+      description: string;
+    };
   }[]
+  
 }
 
 OrderHistoryEmail.PreviewProps = {
