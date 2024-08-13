@@ -1,24 +1,22 @@
 "use server"
 
-import database from "@/db"
-import OrderHistoryEmail from "../../emails/OrderHistory"
-import { Resend } from "resend"
-import { z } from "zod"
-import React from "react"
-import { renderToStaticMarkup } from "react-dom/server" // For server-side rendering of React components
+import { Resend } from "resend";
+import database from "@/db";
+import OrderHistoryEmail from "../../emails/OrderHistory";
+import { z } from "zod";
 
-const emailSchema = z.string().email()
-const resend = new Resend(process.env.RESEND_API_KEY as string)
+const emailSchema = z.string().email();
+const resend = new Resend(process.env.RESEND_API_KEY as string);
 
 export async function emailOrderHistory(
   prevState: unknown,
   formData: FormData
 ): Promise<{ message?: string; error?: string }> {
   // Validate email address
-  const result = emailSchema.safeParse(formData.get("email"))
+  const result = emailSchema.safeParse(formData.get("email"));
 
   if (result.success === false) {
-    return { error: "Invalid email address" }
+    return { error: "Invalid email address" };
   }
 
   // Fetch user data including orders
@@ -42,12 +40,12 @@ export async function emailOrderHistory(
         },
       },
     },
-  })
+  });
 
   if (user == null) {
     return {
       message: "Check your email to view your order history and download your products.",
-    }
+    };
   }
 
   // Process orders
@@ -77,12 +75,7 @@ export async function emailOrderHistory(
   );
 
   // Render OrderHistoryEmail component to static HTML
-  let emailHtml: string
-  try {
-    emailHtml = renderToStaticMarkup(<OrderHistoryEmail orders={orders} />)
-  } catch (error) {
-    return { error: "Failed to generate email content." }
-  }
+  const emailHtml = `<html>${(<OrderHistoryEmail orders={orders} />)}</html>`;
 
   // Send the email
   try {
@@ -91,16 +84,16 @@ export async function emailOrderHistory(
       to: user.email,
       subject: "Order History",
       html: emailHtml, // Use the HTML content here
-    })
+    });
 
     if (data.error) {
-      return { error: "There was an error sending your email. Please try again." }
+      return { error: "There was an error sending your email. Please try again." };
     }
   } catch (error) {
-    return { error: "There was an error sending your email. Please try again." }
+    return { error: "There was an error sending your email. Please try again." };
   }
 
   return {
     message: "Check your email to view your order history and download your products.",
-  }
+  };
 }
