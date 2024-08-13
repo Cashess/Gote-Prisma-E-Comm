@@ -4,6 +4,8 @@ import database from "@/db"
 import OrderHistoryEmail from "../../emails/OrderHistory"
 import { Resend } from "resend"
 import { z } from "zod"
+import React from "react"
+import { renderToStaticMarkup } from "react-dom/server" // For server-side rendering of React components
 
 const emailSchema = z.string().email()
 const resend = new Resend(process.env.RESEND_API_KEY as string)
@@ -12,12 +14,14 @@ export async function emailOrderHistory(
   prevState: unknown,
   formData: FormData
 ): Promise<{ message?: string; error?: string }> {
+  // Validate email address
   const result = emailSchema.safeParse(formData.get("email"))
 
   if (result.success === false) {
     return { error: "Invalid email address" }
   }
 
+  // Fetch user data including orders
   const user = await database.user.findUnique({
     where: { email: result.data },
     select: {
@@ -47,6 +51,7 @@ export async function emailOrderHistory(
     }
   }
 
+  // Process orders
   const orders = await Promise.all(
     user.orders.map(async (order) => {
       // Create a download verification and get its ID
@@ -56,28 +61,31 @@ export async function emailOrderHistory(
           productId: order.product.id,
         },
       });
-  
+
       // Return the order with all required fields
       return {
-        id: order.id, // Ensure id is included
-        pricePaidInCents: order.pricePaidInCents, // Ensure pricePaidInCents is included
-        createdAt: order.createdAt, // Ensure createdAt is included
+        id: order.id,
+        pricePaidInCents: order.pricePaidInCents,
+        createdAt: order.createdAt,
         downloadVerificationId: downloadVerification.id,
         product: {
-          name: order.product.name, // Ensure product details are included
+          name: order.product.name,
           imagePath: order.product.imagePath,
           description: order.product.description,
         },
       };
     })
   );
-  
 
+  // Render OrderHistoryEmail component to static HTML
+  const emailHtml = renderToStaticMarkup(<OrderHistoryEmail orders={orders} />);
+
+  // Send the email
   const data = await resend.emails.send({
     from: `Support <${process.env.SENDER_EMAIL}>`,
     to: user.email,
     subject: "Order History",
-    react: <OrderHistoryEmail orders={await Promise.all(orders)} />,
+    html: emailHtml, // Use the HTML content here
   })
 
   if (data.error) {
