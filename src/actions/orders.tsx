@@ -46,8 +46,7 @@ export async function emailOrderHistory(
 
   if (user == null) {
     return {
-      message:
-        "Check your email to view your order history and download your products.",
+      message: "Check your email to view your order history and download your products.",
     }
   }
 
@@ -78,22 +77,30 @@ export async function emailOrderHistory(
   );
 
   // Render OrderHistoryEmail component to static HTML
-  const emailHtml = renderToStaticMarkup(<OrderHistoryEmail orders={orders} />);
+  let emailHtml: string
+  try {
+    emailHtml = renderToStaticMarkup(<OrderHistoryEmail orders={orders} />)
+  } catch (error) {
+    return { error: "Failed to generate email content." }
+  }
 
   // Send the email
-  const data = await resend.emails.send({
-    from: `Support <${process.env.SENDER_EMAIL}>`,
-    to: user.email,
-    subject: "Order History",
-    html: emailHtml, // Use the HTML content here
-  })
+  try {
+    const data = await resend.emails.send({
+      from: `Support <${process.env.SENDER_EMAIL}>`,
+      to: user.email,
+      subject: "Order History",
+      html: emailHtml, // Use the HTML content here
+    })
 
-  if (data.error) {
+    if (data.error) {
+      return { error: "There was an error sending your email. Please try again." }
+    }
+  } catch (error) {
     return { error: "There was an error sending your email. Please try again." }
   }
 
   return {
-    message:
-      "Check your email to view your order history and download your products.",
+    message: "Check your email to view your order history and download your products.",
   }
 }
