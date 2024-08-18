@@ -1,3 +1,4 @@
+
 const { PrismaClient } = require('@prisma/client');
 const database = new PrismaClient();
 
@@ -5,43 +6,83 @@ async function main() {
   try {
     const productsData = [
       {
-        name: 'Product 1',
+        name: 'Coffee Bean A',
         priceInCents: 1999,
-        filePath: '/products/product1',
-        imagePath: '/images/product1.jpg',
-        description: 'Description of Product 1',
+        filePath: '/products',
+        imagePath: '/products/pexels-enginakyurt-2456429.jpg', // Replace with actual Pexels URL
+        description: 'Rich and aromatic coffee bean A.',
         isAvailableForPurchase: true,
       },
       {
-        name: 'Product 2',
+        name: 'Coffee Bean B',
         priceInCents: 2999,
-        filePath: '/products/product2',
-        imagePath: '/images/product2.jpg',
-        description: 'Description of Product 2',
+        filePath: '/products',
+        imagePath: '/products/pexels-cristian-rojas-7487365.jpg', // Replace with actual Pexels URL
+        description: 'Smooth and balanced coffee bean B.',
         isAvailableForPurchase: true,
       },
       {
-        name: 'Product 3',
+        name: 'Coffee Bean C',
         priceInCents: 3999,
-        filePath: '/products/product3',
-        imagePath: '/images/product3.jpg',
-        description: 'Description of Product 3',
+        filePath: '/products',
+        imagePath: 'https://images.pexels.com/photos/789012/pexels-photo-789012.jpeg', // Replace with actual Pexels URL
+        description: 'Bold and intense coffee bean C.',
         isAvailableForPurchase: true,
       },
       {
-        name: 'Product 4',
+        name: 'Coffee Bean D',
         priceInCents: 4999,
-        filePath: '/products/product4',
-        imagePath: '/images/product4.jpg',
-        description: 'Description of Product 4',
+        filePath: '/products',
+        imagePath: '/products/pexels-shottrotter-1309778.jpg', // Replace with actual Pexels URL
+        description: 'Complex and flavorful coffee bean D.',
         isAvailableForPurchase: true,
       },
       {
-        name: 'Product 5',
+        name: 'Coffee Bean E',
         priceInCents: 5999,
-        filePath: '/products/product5',
-        imagePath: '/images/product5.jpg',
-        description: 'Description of Product 5',
+        filePath: '/products',
+        imagePath: '/products/pexels-johnmatt-3784328.jpg', // Replace with actual Pexels URL
+        description: 'Premium quality coffee bean E.',
+        isAvailableForPurchase: true,
+      },
+      {
+        name: 'Coffee Bean F',
+        priceInCents: 1999,
+        filePath: '/products',
+        imagePath: '/product/pexels-goumbik-94273pexels3.jpg', // Replace with actual Pexels URL
+        description: 'Freshly roasted coffee bean F.',
+        isAvailableForPurchase: true,
+      },
+      {
+        name: 'Coffee Bean G',
+        priceInCents: 2999,
+        filePath: '/products',
+        imagePath: '/product/pexels-valeriiamiller-3146167.jpg', // Replace with actual Pexels URL
+        description: 'Premium blend coffee bean G.',
+        isAvailableForPurchase: true,
+      },
+      {
+        name: 'Coffee Bean H',
+        priceInCents: 3999,
+        filePath: '/products',
+        imagePath: '/product/pexels-eyad-tariq-2217318-3879495.jpg', // Replace with actual Pexels URL
+        description: 'Organic coffee bean H with unique flavor.',
+        isAvailableForPurchase: true,
+      },
+      {
+        name: 'Coffee Bean I',
+        priceInCents: 4999,
+        filePath: '/products',
+        imagePath: '/product/pexels-lilartsy-3050824.jpg', // Replace with actual Pexels URL
+        description: 'Single origin coffee bean I.',
+        isAvailableForPurchase: true,
+      },
+      {
+        name: 'Coffee Bean J',
+        priceInCents: 5999,
+        filePath: '/products',
+        imagePath: '/product/pexels-andrew-7400278.jpg', // Replace with actual Pexels URL
+        description: 'Exotic and rare coffee bean J.',
         isAvailableForPurchase: true,
       },
     ];

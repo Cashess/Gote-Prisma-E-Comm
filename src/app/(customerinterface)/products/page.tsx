@@ -21,6 +21,11 @@ export default function ProductPage() {
        <ProductCardSkeleton/>
        <ProductCardSkeleton/>
        <ProductCardSkeleton/>
+       <ProductCardSkeleton/>
+       <ProductCardSkeleton/>
+       <ProductCardSkeleton/>
+       <ProductCardSkeleton/>
+       <ProductCardSkeleton/>
        </> 
     }>
        <ProductsSuspense />
