@@ -6,47 +6,50 @@ generator client {
 }
 
 datasource db {
-  provider = "mongodb"
-  url      = env("DATABASE_URL")
+  provider = "postgresql"
+  url = env("POSTGRES_PRISMA_URL") // uses connection pooling
+  directUrl = env("POSTGRES_URL_NON_POOLING") // uses a direct connection
 }
 
 model Product {
-  id     String @id @default(auto()) @map("_id") @db.ObjectId
-  name                     String
-  priceInCents             Int
-  filePath                 String
-  imagePath                String
-  description              String
-  isAvailableForPurchase   Boolean               @default(true)
-  createdAt                DateTime              @default(now())
-  updatedAt                DateTime              @updatedAt
-  orders                   Order[]
-  downloadVerifications    DownloadVerification[]
+ id        String     @default(cuid()) @id
+
+  name                   String
+  priceInCents           Int
+  filePath               String
+  imagePath              String
+  description            String
+  isAvailableForPurchase Boolean                @default(true)
+  createdAt              DateTime               @default(now())
+  updatedAt              DateTime               @updatedAt
+  orders                 Order[]
+  downloadVerifications  DownloadVerification[]
 }
 
 model User {
-  id    String @id @default(auto()) @map("_id") @db.ObjectId
-  email     String    @unique
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  id            String       @default(cuid()) @id
+  email     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
   orders    Order[]
 }
 
 model Order {
-  id     String @id @default(auto()) @map("_id") @db.ObjectId
+  id        String     @default(cuid()) @id
   pricePaidInCents Int
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
-  userId String @db.ObjectId
+
+  userId    String
   productId String
   user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   product   Product @relation(fields: [productId], references: [id], onDelete: Restrict)
 }
 
 model DownloadVerification {
-  id     String @id @default(auto()) @map("_id") @db.ObjectId
-  expiresAt  DateTime
-  createdAt  DateTime  @default(now())
-  productId  String
-  product    Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  id        String     @default(cuid()) @id
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
 }

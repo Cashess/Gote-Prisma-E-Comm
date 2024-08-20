@@ -85,13 +85,13 @@ async function main() {
         description: 'Exotic and rare coffee bean J.',
         isAvailableForPurchase: true,
       },
+      // ...other products
     ];
 
-    for (let productData of productsData) {
-      await database.product.create({
-        data: productData,
-      });
-    }
+    await database.product.createMany({
+      data: productsData,
+      skipDuplicates: true, // Optional: Skip records that already exist
+    });
 
     console.log('Seeding completed!');
   } catch (error) {

@@ -1,8 +1,17 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-    images: {
-        domains: ['images.pexels.com'], // Add your allowed image domains here
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'images.pexels.com', // Correctly specify the image domain here
       },
+      {
+        protocol: 'https',
+        hostname: 'anotherdomain.com',
+      },
+    ],
+  },
 };
 
 export default nextConfig;

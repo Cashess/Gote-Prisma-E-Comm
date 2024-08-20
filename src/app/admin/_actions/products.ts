@@ -1,11 +1,11 @@
 "use server"
 
-import database from "@/db"
+import cuid from 'cuid';
+import database from "@/db/"
 import { z } from "zod"
 import fs from "fs/promises"
 import { notFound, redirect } from "next/navigation"
 import { revalidatePath } from "next/cache"
-import { v4 as uuidv4 } from 'uuid'; // Use uuid package for UUID generation
 
 const fileSchema = z.instanceof(File, { message: "Required" })
 const imageSchema = fileSchema.refine(
@@ -22,43 +22,41 @@ const addSchema = z.object({
 
 export async function addProduct(prevState: unknown, formData: FormData) {
   const result = addSchema.safeParse(Object.fromEntries(formData.entries()))
-  if (!result.success) {
+  if (result.success === false) {
     return result.error.formErrors.fieldErrors
   }
 
   const data = result.data
 
-  try {
-    await fs.mkdir("products", { recursive: true })
-    const filePath = `products/${uuidv4()}-${data.file.name}`
-    await fs.writeFile(filePath, Buffer.from(await data.file.arrayBuffer()))
+  await fs.mkdir("products", { recursive: true })
+  const filePath = `products/${cuid()}-${data.file.name}`;
+  await fs.writeFile(filePath, Buffer.from(await data.file.arrayBuffer()))
 
-    await fs.mkdir("public/products", { recursive: true })
-    const imagePath = `/products/${uuidv4()}-${data.image.name}`
-    await fs.writeFile(
-      `public${imagePath}`,
-      Buffer.from(await data.image.arrayBuffer())
-    )
+  await fs.mkdir("public/products", { recursive: true })
+  const imagePath = `/products/${cuid()}-${data.image.name}`;
+  await fs.writeFile(
+    `public${imagePath}`,
+    Buffer.from(await data.image.arrayBuffer())
+  )
 
-    await database.product.create({
-      data: {
-        isAvailableForPurchase: false,
-        name: data.name,
-        description: data.description,
-        priceInCents: data.priceInCents,
-        filePath,
-        imagePath,
-      },
-    })
+  
+  
+  
+  await database.product.create({
+    data: {
+      isAvailableForPurchase: false,
+      name: data.name,
+      description: data.description,
+      priceInCents: data.priceInCents,
+      filePath,
+      imagePath,
+    },
+  })
 
-    revalidatePath("/")
-    revalidatePath("/products")
+  revalidatePath("/")
+  revalidatePath("/products")
 
-    redirect("/admin/products")
-  } catch (error) {
-    console.error("Error adding product:", error)
-    return { general: "An error occurred while adding the product." }
-  }
+  redirect("/admin/products")
 }
 
 const editSchema = addSchema.extend({
@@ -72,82 +70,67 @@ export async function updateProduct(
   formData: FormData
 ) {
   const result = editSchema.safeParse(Object.fromEntries(formData.entries()))
-  if (!result.success) {
+  if (result.success === false) {
     return result.error.formErrors.fieldErrors
   }
 
   const data = result.data
   const product = await database.product.findUnique({ where: { id } })
 
-  if (!product) return notFound()
+  if (product == null) return notFound()
 
-  try {
-    let filePath = product.filePath
-    if (data.file && data.file.size > 0) {
-      await fs.unlink(product.filePath)
-      filePath = `products/${uuidv4()}-${data.file.name}`
-      await fs.writeFile(filePath, Buffer.from(await data.file.arrayBuffer()))
-    }
-
-    let imagePath = product.imagePath
-    if (data.image && data.image.size > 0) {
-      await fs.unlink(`public${product.imagePath}`)
-      imagePath = `/products/${uuidv4()}-${data.image.name}`
-      await fs.writeFile(
-        `public${imagePath}`,
-        Buffer.from(await data.image.arrayBuffer())
-      )
-    }
-
-    await database.product.update({
-      where: { id },
-      data: {
-        name: data.name,
-        description: data.description,
-        priceInCents: data.priceInCents,
-        filePath,
-        imagePath,
-      },
-    })
-
-    revalidatePath("/")
-    revalidatePath("/products")
-
-    redirect("/admin/products")
-  } catch (error) {
-    console.error("Error updating product:", error)
-    return { general: "An error occurred while updating the product." }
+  let filePath = product.filePath
+  if (data.file != null && data.file.size > 0) {
+    await fs.unlink(product.filePath)
+    filePath = `products/${crypto.randomUUID()}-${data.file.name}`
+    await fs.writeFile(filePath, Buffer.from(await data.file.arrayBuffer()))
   }
+
+  let imagePath = product.imagePath
+  if (data.image != null && data.image.size > 0) {
+    await fs.unlink(`public${product.imagePath}`)
+    imagePath = `/products/${crypto.randomUUID()}-${data.image.name}`
+    await fs.writeFile(
+      `public${imagePath}`,
+      Buffer.from(await data.image.arrayBuffer())
+    )
+  }
+
+  await database.product.update({
+    where: { id },
+    data: {
+      name: data.name,
+      description: data.description,
+      priceInCents: data.priceInCents,
+      filePath,
+      imagePath,
+    },
+  })
+
+  revalidatePath("/")
+  revalidatePath("/products")
+
+  redirect("/admin/products")
 }
 
 export async function toggleProductAvailability(
   id: string,
   isAvailableForPurchase: boolean
 ) {
-  try {
-    await database.product.update({ where: { id }, data: { isAvailableForPurchase } })
-    revalidatePath("/")
-    revalidatePath("/products")
-  } catch (error) {
-    console.error("Error toggling product availability:", error)
-    return { general: "An error occurred while updating product availability." }
-  }
+  await database.product.update({ where: { id }, data: { isAvailableForPurchase } })
+
+  revalidatePath("/")
+  revalidatePath("/products")
 }
 
 export async function deleteProduct(id: string) {
-  const product = await database.product.findUnique({ where: { id } })
+  const product = await database.product.delete({ where: { id } })
 
-  if (!product) return notFound()
+  if (product == null) return notFound()
 
-  try {
-    await database.product.delete({ where: { id } })
-    await fs.unlink(product.filePath)
-    await fs.unlink(`public${product.imagePath}`)
+  await fs.unlink(product.filePath)
+  await fs.unlink(`public${product.imagePath}`)
 
-    revalidatePath("/")
-    revalidatePath("/products")
-  } catch (error) {
-    console.error("Error deleting product:", error)
-    return { general: "An error occurred while deleting the product." }
-  }
+  revalidatePath("/")
+  revalidatePath("/products")
 }
