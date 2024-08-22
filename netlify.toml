@@ -1,0 +1,4 @@
+[[redirects]]
+from = "/*"
+to = "/purchase-success"
+status= 200
