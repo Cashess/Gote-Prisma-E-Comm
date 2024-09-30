@@ -59,8 +59,8 @@ async function OrdersTable() {
       <TableBody>
         {orders.map(order => (
           <TableRow key={order.id}>
-            <TableCell>{order.product.name}</TableCell>
-            <TableCell>{order.user.email}</TableCell>
+            <TableCell></TableCell>
+            <TableCell>{order.userId}</TableCell>
             <TableCell>
               {formatCurrency(order.pricePaidInCents / 100)}
             </TableCell>
