@@ -19,7 +19,6 @@ model Product {
   createdAt              DateTime               @default(now())
   updatedAt              DateTime               @updatedAt
   orders                 Order[]
-  cartItems              CartItem[] // Added relation field
   downloadVerifications  DownloadVerification[]
 }
 
@@ -32,70 +31,36 @@ model User {
   accounts      Account[]
   sessions      Session[]
   Orders        Order[]
-  Cart          Cart[]
 
   @@map("users")
 }
 
 model Order {
-  id                String          @id @default(cuid())
-  email             String
-  createdAt         DateTime        @default(now())
-  updatedAt         DateTime        @updatedAt
-  userId            String
-  productId         String
-  user              User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  product           Product         @relation(fields: [productId], references: [id], onDelete: Restrict)
-  intent_id         String?         @unique
-  pricePaidInCents  Int
-  shippingAddress   ShippingAddress @relation(fields: [shippingAddressId], references: [id])
-  shippingAddressId String
-  billingAddress    BillingAddress  @relation(fields: [billingAddressId], references: [id])
-  billingAddressId  String
-}
+  id               String   @id @default(cuid())
+  email            String
+  userId           String
+  productId        String
+  intent_id        String?  @unique
+  pricePaidInCents Int
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
-model ShippingAddress {
-  id         String  @id @default(cuid())
-  name       String
-  street     String
-  city       String
-  state      String
-  postalCode String
-  country    String
-  Order      Order[]
-}
+  // Embedded Shipping and Billing Addresses
+  shippingName       String
+  shippingStreet     String
+  shippingCity       String
+  shippingState      String
+  shippingPostalCode String
+  shippingCountry    String
 
-model BillingAddress {
-  id         String  @id @default(cuid())
-  name       String
-  street     String
-  city       String
-  state      String
-  postalCode String
-  country    String
-  Order      Order[]
-}
-
-model Cart {
-  id        String     @id @default(cuid())
-  items     CartItem[]
-  userId    String?
-  user      User?      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
-
-  @@map("carts")
-}
-
-model CartItem {
-  id        String  @id @default(cuid())
-  productId String
-  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
-  quantity  Int
-  cartId    String
-  cart      Cart    @relation(fields: [cartId], references: [id], onDelete: Cascade)
-
-  @@map("cartitems")
+  billingName       String
+  billingStreet     String
+  billingCity       String
+  billingState      String
+  billingPostalCode String
+  billingCountry    String
+  Product           Product @relation(fields: [productId], references: [id])
+  User              User    @relation(fields: [userId], references: [id])
 }
 
 model Account {

@@ -1,113 +1,87 @@
-import cuid from 'cuid' // Import cuid generator
-import database from '@/db'
-import { stripe } from '@/lib/stripe'
-import { headers } from 'next/headers'
-import { NextResponse } from 'next/server'
-import Stripe from 'stripe'
-import { Resend } from 'resend'
-import OrderReceivedEmail from '@/components/emails/OrderReceiveEmail'
-
-const resend = new Resend(process.env.RESEND_API_KEY)
+import cuid from 'cuid';
+import { stripe } from '@/lib/stripe';
+import database from '@/db';
+import { redis } from '../../../lib/redis';
+import Stripe from 'stripe';
 
 export async function POST(req: Request) {
+  const body = await req.text();
+  const signature = req.headers.get('Stripe-Signature') as string;
+
+  let event;
+
   try {
-    const body = await req.text()
-    const signature = headers().get('stripe-signature')
-
-    if (!signature) {
-      return new Response('Invalid signature', { status: 400 })
-    }
-
-    const event = stripe.webhooks.constructEvent(
+    event = stripe.webhooks.constructEvent(
       body,
       signature,
-      process.env.STRIPE_WEBHOOK_SECRET!
-    )
+      process.env.STRIPE_SECRET_WEBHOOK as string
+    );
+  } catch (error) {
+    console.error('⚠️ Webhook signature verification failed.', error);
+    return new Response('Webhook Error', { status: 400 });
+  }
 
-    if (event.type === 'checkout.session.completed') {
-      const session = event.data.object as Stripe.Checkout.Session
+  // Handle Stripe events
+  switch (event.type) {
+    case 'checkout.session.completed': {
+      const session = event.data.object as Stripe.Checkout.Session;
 
-      if (!session.customer_details?.email) {
-        throw new Error('Missing customer email')
+      console.log("Stripe session:", session);
+
+      // Ensure session metadata exists
+      if (!session || !session.metadata) {
+        console.error('Session or metadata missing from event:', event);
+        return new Response('Session data is missing', { status: 400 });
       }
 
-      const { userId, orderId } = session.metadata || {
-        userId: null,
-        orderId: null,
+      const userId = session.metadata.userId;
+      const productId = session.metadata.productId;
+      const pricePaidInCents = session.metadata.amount_total;
+
+      if (!userId || !productId || !session.payment_intent) {
+        console.error('Missing necessary session data:', { userId, productId });
+        return new Response('Missing session data', { status: 400 });
       }
 
-      if (!userId || !orderId) {
-        throw new Error('Invalid request metadata')
-      }
-
-      const billingAddress = session.customer_details.address
-      const shippingAddress = session.shipping_details?.address
-
-      if (!billingAddress || !shippingAddress) {
-        throw new Error('Missing billing or shipping address')
-      }
-
-      // Update the order in the database
-      const updatedOrder = await database.order.update({
-        where: {
-          id: orderId,
-        },
-        data: {
-          pricePaidInCents: session.amount_total ?? 0, // Handle potential null by defaulting to 0
-          shippingAddress: {
-            create: {
-              id: cuid(), // Ensure a unique ID is created for the shipping address
-              name: session.customer_details.name!,
-              city: shippingAddress.city ?? '',
-              country: shippingAddress.country ?? '',
-              postalCode: shippingAddress.postal_code ?? '',
-              street: shippingAddress.line1 ?? '',
-              state: shippingAddress.state ?? '', // Handle null as an empty string
-            },
+      try {
+        // Create an order in the database
+        const createdOrder = await database.order.create({
+          data: {
+            id: cuid(),
+            email: session.customer_details?.email ?? '',
+            userId: userId,
+            productId: productId,
+            intent_id: session.payment_intent as string,
+            pricePaidInCents: session.amount_total ?? 0,
+            shippingStreet: session.shipping_details?.address?.line1 ?? '',
+            shippingCity: session.shipping_details?.address?.city ?? '',
+            shippingState: session.shipping_details?.address?.state ?? '',
+            shippingPostalCode: session.shipping_details?.address?.postal_code ?? '',
+            shippingCountry: session.shipping_details?.address?.country ?? '',
+            billingName: session.customer_details?.name ?? '',
+            billingStreet: session.customer_details?.address?.line1 ?? '',
+            billingCity: session.customer_details?.address?.city ?? '',
+            billingState: session.customer_details?.address?.state ?? '',
+            billingPostalCode: session.customer_details?.address?.postal_code ?? '',
+            billingCountry: session.customer_details?.address?.country ?? '',
           },
-          billingAddress: {
-            create: {
-              id: cuid(), // Generate a unique ID for billing address
-              name: session.customer_details.name!,
-              city: billingAddress.city ?? '',
-              country: billingAddress.country ?? '',
-              postalCode: billingAddress.postal_code ?? '',
-              street: billingAddress.line1 ?? '',
-              state: billingAddress.state ?? '', // Handle null as an empty string
-            },
-          },
-        },
-      })
+        });
 
-      // Send order confirmation email
-      await resend.emails.send({
-        from: `Support <${process.env.SENDER_EMAIL}>`,
-        to: [session.customer_details.email],
-        subject: 'Thanks for your order!',
-        react: OrderReceivedEmail({
-          orderId,
-          orderDate: updatedOrder.createdAt.toLocaleDateString(),
-          shippingAddress: {
-            id: cuid(), // Generate another unique ID using cuid
-            name: session.customer_details.name!,
-            city: shippingAddress.city ?? '',
-            country: shippingAddress.country ?? '',
-            postalCode: shippingAddress.postal_code ?? '',
-            street: shippingAddress.line1 ?? '',
-            state: shippingAddress.state ?? '',
-          },
-        }),
-      })
+        // Clear the user's cart from Redis
+        await redis.del(`cart-${userId}`);
 
-      return NextResponse.json({ result: event, ok: true })
+        return new Response(JSON.stringify({ order: createdOrder }), { status: 200 });
+      } catch (error) {
+        console.error('Error creating order:', error);
+        return new Response('Error creating order', { status: 500 });
+      }
     }
 
-    return new Response('Unhandled event type', { status: 400 })
-  } catch (err) {
-    console.error('Error processing webhook:', err)
-    return NextResponse.json(
-      { message: 'Something went wrong', ok: false },
-      { status: 500 }
-    )
+    default: {
+      console.log(`Unhandled event type ${event.type}`);
+      break;
+    }
   }
+
+  return new Response(null, { status: 200 });
 }
