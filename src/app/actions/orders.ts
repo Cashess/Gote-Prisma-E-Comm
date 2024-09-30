@@ -6,10 +6,8 @@ export async function userOrderExists(email: string, productId: string): Promise
   try {
     const order = await database.order.findFirst({
       where: {
-        user: {
-          email,
-        },
-        productId,
+        email: email, // Corrected email comparison
+        productId: productId,
       },
       select: {
         id: true,
