@@ -35,6 +35,28 @@ model User {
   @@map("users")
 }
 
+model ShippingAddress {
+  id         String  @id @default(cuid())
+  name       String
+  street     String
+  city       String
+  state      String
+  postalCode String
+  country    String
+  orders     Order[]
+}
+
+model BillingAddress {
+  id         String  @id @default(cuid())
+  name       String
+  street     String
+  city       String
+  state      String
+  postalCode String
+  country    String
+  orders     Order[]
+}
+
 model Order {
   id               String   @id @default(cuid())
   email            String
@@ -45,23 +67,15 @@ model Order {
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
-  // Embedded Shipping and Billing Addresses
-  shippingName       String
-  shippingStreet     String
-  shippingCity       String
-  shippingState      String
-  shippingPostalCode String
-  shippingCountry    String
+  shippingAddressId String?
+  billingAddressId  String?
+  shippingAddress   ShippingAddress? @relation(fields: [shippingAddressId], references: [id])
+  billingAddress    BillingAddress?  @relation(fields: [billingAddressId], references: [id])
 
-  billingName       String
-  billingStreet     String
-  billingCity       String
-  billingState      String
-  billingPostalCode String
-  billingCountry    String
-  Product           Product @relation(fields: [productId], references: [id])
-  User              User    @relation(fields: [userId], references: [id])
+  Product Product @relation(fields: [productId], references: [id])
+  User    User    @relation(fields: [userId], references: [id])
 }
+
 
 model Account {
   id                String  @id @default(cuid())
