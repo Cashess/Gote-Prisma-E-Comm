@@ -23,8 +23,8 @@ function getOrders() {
     select: {
       id: true,
       pricePaidInCents: true,
-      product: { select: { name: true } },
-      user: { select: { email: true } },
+      email:true,
+      userId: true
     },
     orderBy: { createdAt: "desc" },
   })
