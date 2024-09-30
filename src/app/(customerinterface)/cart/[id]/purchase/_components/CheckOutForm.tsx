@@ -102,7 +102,7 @@ function Form({ cart }: FormProps) {
       .confirmPayment({
         elements,
         confirmParams: {
-          return_url: `${process.env.NEXT_PUBLIC_SERVER_URL}/stripe/purchase-success`,
+          return_url: 'http://localhost:3000/stripe/purchase-success',
         },
       })
       .then(({ error }) => {
