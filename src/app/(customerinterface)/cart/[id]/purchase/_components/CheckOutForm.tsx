@@ -98,11 +98,13 @@ function Form({ cart }: FormProps) {
     }
 
     // Confirm payment with Stripe
+    console.log(`${process.env.NEXT_PUBLIC_SERVER_URL}/stripe/purchase-success`);
+
     stripe
       .confirmPayment({
         elements,
         confirmParams: {
-          return_url: 'http://localhost:3000/stripe/purchase-success',
+          return_url: `${process.env.NEXT_PUBLIC_SERVER_URL}/stripe/purchase-success`,
         },
       })
       .then(({ error }) => {

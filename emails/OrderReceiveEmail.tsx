@@ -1,4 +1,4 @@
-import { ShippingAddress } from '@prisma/client'
+import { ShippingAddress } from '@prisma/client';
 import {
   Body,
   Column,
@@ -12,21 +12,21 @@ import {
   Row,
   Section,
   Text,
-} from '@react-email/components'
+} from '@react-email/components';
 
 const OrderReceivedEmail = ({
   shippingAddress,
   orderId,
   orderDate,
 }: {
-  shippingAddress: ShippingAddress
-  orderId: string
-  orderDate: string
+  shippingAddress: ShippingAddress;
+  orderId: string;
+  orderDate: string;
 }) => {
   const baseUrl =
-    process.env.NODE_ENV === 'development'
+    process.env.NODE_ENV === 'production'
       ? 'http://localhost:3000'
-      : 'https://gote-Coffee-Hub.com'
+      : 'https://gote-Coffee-Hub.com';
 
   return (
     <Html>
@@ -51,7 +51,7 @@ const OrderReceivedEmail = ({
               <p>
                 We&apos;ve received your order, and we&apos;re working on it.
               </p>
-              your package has been shipped. Delivery usually takes 2 days.
+              Your package has been shipped. Delivery usually takes 2 days.
             </Text>
             <Text style={{ ...global.text, marginTop: 24 }}>
               If you have any questions regarding your order, please feel free
@@ -61,17 +61,21 @@ const OrderReceivedEmail = ({
                 <p>
                   We&apos;re thrilled to process your order and we&apos;ll keep
                   you updated on its status.
-                </p>{' '}
+                </p>
                 We&apos;ve received it and will process it soon.
               </p>
             </Text>
           </Section>
           <Hr style={global.hr} />
           <Section style={global.defaultPadding}>
-            <Text style={adressTitle}>Shipping to: {shippingAddress.name}</Text>
+            <Text style={adressTitle}>
+              Shipping to: {shippingAddress?.name ?? 'Unknown'}
+            </Text>
             <Text style={{ ...global.text, fontSize: 14 }}>
-              {shippingAddress.street}, {shippingAddress.city},{' '}
-              {shippingAddress.state} {shippingAddress.postalCode}
+              {shippingAddress?.street ?? 'Unknown Street'},{' '}
+              {shippingAddress?.city ?? 'Unknown City'},{' '}
+              {shippingAddress?.state ?? 'Unknown State'}{' '}
+              {shippingAddress?.postalCode ?? '0000'}
             </Text>
           </Section>
           <Hr style={global.hr} />
@@ -120,25 +124,25 @@ const OrderReceivedEmail = ({
         </Container>
       </Body>
     </Html>
-  )
-}
+  );
+};
 
-export default OrderReceivedEmail
+export default OrderReceivedEmail;
 
 const paddingX = {
   paddingLeft: '40px',
   paddingRight: '40px',
-}
+};
 
 const paddingY = {
   paddingTop: '22px',
   paddingBottom: '22px',
-}
+};
 
 const paragraph = {
   margin: '0',
   lineHeight: '2',
-}
+};
 
 const global = {
   paddingX,
@@ -175,20 +179,20 @@ const global = {
     borderColor: '#E5E5E5',
     margin: '0',
   },
-}
+};
 
 const main = {
   backgroundColor: '#ffffff',
   fontFamily:
     '-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Oxygen-Sans,Ubuntu,Cantarell,"Helvetica Neue",sans-serif',
-}
+};
 
 const container = {
   margin: '10px auto',
   width: '600px',
   maxWidth: '100%',
   border: '1px solid #E5E5E5',
-}
+};
 
 const track = {
   container: {
@@ -201,18 +205,18 @@ const track = {
     lineHeight: '1.4',
     color: '#6F6F6F',
   },
-}
+};
 
 const message = {
   padding: '40px 74px',
   textAlign: 'center',
-} as React.CSSProperties
+} as React.CSSProperties;
 
 const adressTitle = {
   ...paragraph,
   fontSize: '15px',
   fontWeight: 'bold',
-}
+};
 
 const footer = {
   policy: {
@@ -225,4 +229,4 @@ const footer = {
     fontSize: '13px',
     textAlign: 'center',
   } as React.CSSProperties,
-}
+};

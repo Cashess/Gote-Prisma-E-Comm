@@ -1,0 +1,36 @@
+services:
+  app:
+    build:
+      context: .
+      args:
+        REDIS_URL: https://working-fly-20120.upstash.io
+        REDIS_TOKEN: AU6YAAIjcDFmNTVhOWIwNTQzNzI0ZjFmYmJhNTQwOTg3YWQxMjliOHAxMA
+    image: gote-ecomm
+    ports:
+      - "3002:3002"
+    environment:
+      - NODE_ENV=production
+      - AUTH_TRUST_HOST=true
+      - NEXT_PUBLIC_SERVER_URL=http://localhost:3002
+      - AUTH_SECRET=RaQVJ5VvMIubAG/l29A94XpY52ckkWvNC+/fBW5fsTw=
+      - AUTH_URL=http://localhost:3002/auth
+      - AUTH_REDIRECT_PROXY_URL=http://localhost:3002/api/auth
+      - DATABASE_URL=postgres://default:0Z6NlJaxkYMb@ep-orange-scene-a4tn1vc8-pooler.us-east-1.aws.neon.tech/verceldb?sslmode=require
+      - REDIS_URL=https://working-fly-20120.upstash.io
+      - REDIS_TOKEN=AU6YAAIjcDFmNTVhOWIwNTQzNzI0ZjFmYmJhNTQwOTg3YWQxMjliOHAxMA
+    volumes:
+      - .:/app
+    depends_on:
+      - db
+
+  db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: default
+      POSTGRES_PASSWORD: example
+      POSTGRES_DB: verceldb
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:

@@ -1,80 +1,97 @@
-import cuid from 'cuid'; // Import cuid generator for unique IDs
-import { stripe } from '@/lib/stripe' // Ensure this is the correct path for your stripe instance
 import database from '@/db';
-import { redis } from '../../../lib/redis' // Ensure correct redis import
-import Stripe from 'stripe'
+import { stripe } from '@/lib/stripe';
+import { NextResponse } from 'next/server';
+import Stripe from 'stripe';
+import { redis } from '@/lib/redis';
+import { headers } from 'next/headers';
 
 export async function POST(req: Request) {
-  const body = await req.text();
-  const signature = req.headers.get('Stripe-Signature') as string;
-
-  let event;
-
   try {
-    event = stripe.webhooks.constructEvent(
+    const body = await req.text();
+    const signature = headers().get('stripe-signature');
+
+    if (!signature) {
+      return new Response('Invalid signature', { status: 400 });
+    }
+
+    const event = stripe.webhooks.constructEvent(
       body,
       signature,
-      process.env.STRIPE_SECRET_WEBHOOK as string
+      process.env.STRIPE_WEBHOOK_SECRET!
     );
-  } catch (error) {
-    console.error(`⚠️  Webhook signature verification failed.`, error);
-    return new Response('Webhook Error', { status: 400 });
-  }
 
-  // Handle Stripe events
-  switch (event.type) {
-    case 'checkout.session.completed': {
-      const session = event.data.object as Stripe.Checkout.Session;
+    if (event.type === 'charge.updated') {
+      const charge = event.data.object as Stripe.Charge;
+      
+      console.log('Charge object:', charge);
 
-      // Ensure all session fields are safely accessed
-      const userId = session.metadata?.userId;
-      const productId = session.metadata?.productId;
+      // Extract metadata
+      const userId = charge.metadata?.userId;
+      const orderId = charge.metadata?.orderId;
+      const productId = charge.metadata?.productId;
 
-
-      if (!session.amount_total || !session.payment_intent || !userId || !productId || !session.shipping_address_collection || !session.shipping_details) {
-        console.error('Missing session data');
-        return new Response('Missing session data', { status: 400 });
+      if (!userId || !orderId || !productId) {
+        console.error('Missing metadata');
+        return new Response('Missing metadata', { status: 400 });
       }
 
-      // Create an order in the database
+      const billingDetails = charge.billing_details?.address;
+      const shippingDetails = charge.shipping?.address;
+
+      if (!billingDetails || !shippingDetails) {
+        console.error('Missing address details');
+        return new Response('Missing address details', { status: 400 });
+      }
+
       try {
-        const createdOrder = await database.order.create({
+        const shippingAddress = await database.shippingAddress.create({
           data: {
-            id: cuid(),
-            email: session.customer_details?.email ?? '',
-            userId: userId,
-            productId: productId,
-            intent_id: session.payment_intent as string,
-            pricePaidInCents: session.amount_total ?? 0,
-            shippingStreet: session.shipping_details?.address?.line1 ?? "",
-            shippingCity: session.shipping_details?.address?.city ?? '',
-            shippingState: session.shipping_details?.address?.state ?? '',
-            shippingPostalCode: session.shipping_details?.address?.postal_code ?? '',
-            shippingCountry: session.shipping_details?.address?.country ?? '',
-            billingName: session.customer_details?.name ?? '',
-            billingStreet: session.customer_details?.address?.line1 ?? '',
-            billingCity: session.customer_details?.address?.city ?? '',
-            billingState: session.customer_details?.address?.state ?? '',
-            billingPostalCode: session.customer_details?.address?.postal_code ?? '',
-            billingCountry: session.customer_details?.address?.country ?? '',
+            name: charge.shipping?.name ?? 'Unknown',
+            street: shippingDetails.line1 ?? 'Unknown Street',
+            city: shippingDetails.city ?? 'Unknown City',
+            state: shippingDetails.state ?? 'Unknown State',
+            postalCode: shippingDetails.postal_code ?? '0000',
+            country: shippingDetails.country ?? 'Unknown Country',
           },
         });
 
-        // Clear the user's cart from Redis
-        await redis.del(`cart-${userId}`);
-      } catch (error) {
-        console.error('Error creating order:', error);
-        return new Response('Error creating order', { status: 500 });
+        const billingAddress = await database.billingAddress.create({
+          data: {
+            name: charge.billing_details?.name ?? 'Unknown',
+            street: billingDetails.line1 ?? 'Unknown Street',
+            city: billingDetails.city ?? 'Unknown City',
+            state: billingDetails.state ?? 'Unknown State',
+            postalCode: billingDetails.postal_code ?? '0000',
+            country: billingDetails.country ?? 'Unknown Country',
+          },
+        });
+
+        const updatedOrder = await database.order.update({
+          where: { id: orderId },
+          data: {
+            email: charge.billing_details?.email ?? 'Unknown',
+            intent_id: charge.payment_intent as string,
+            pricePaidInCents: charge.amount_captured,
+            shippingAddressId: shippingAddress.id,
+            billingAddressId: billingAddress.id,
+          },
+        });
+
+        const cartKey = `cart-${userId}`;
+        const cart = await redis.get(cartKey);
+        console.log('Cart data:', cart);
+        await redis.del(cartKey);
+
+        return NextResponse.json({ received: true, order: updatedOrder });
+      } catch (err) {
+        console.error('Error processing webhook:', err);
+        return new Response('Error processing webhook', { status: 500 });
       }
+    }
 
-      break;
-    }
-    default: {
-      console.log(`Unhandled event type ${event.type}`);
-      break;
-    }
+    return new Response('Unhandled event type', { status: 400 });
+  } catch (err) {
+    console.error('Error processing webhook:', err);
+    return new Response('Webhook handler failed', { status: 500 });
   }
-
-  // Return a 200 response to acknowledge receipt of the event
-  return new Response(null, { status: 200 });
 }
